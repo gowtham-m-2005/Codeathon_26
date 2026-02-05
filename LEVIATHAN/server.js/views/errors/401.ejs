@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unauthorized - 401</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #fc466b 0%, #3f5efb 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .error-container {
+            background: white;
+            padding: 60px 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 500px;
+        }
+        .error-code {
+            font-size: 80px;
+            font-weight: 900;
+            color: #fc466b;
+            margin-bottom: 20px;
+        }
+        h1 {
+            font-size: 32px;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        p {
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        .btn {
+            display: inline-block;
+            padding: 14px 32px;
+            background: linear-gradient(135deg, #fc466b 0%, #3f5efb 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(252,70,107,0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="error-code">401</div>
+        <h1>🔒 Unauthorized Access</h1>
+        <p>You need to be logged in to access this page. Please login with your credentials to continue.</p>
+        <a href="/auth/login" class="btn">Go to Login</a>
+    </div>
+</body>
+</html>

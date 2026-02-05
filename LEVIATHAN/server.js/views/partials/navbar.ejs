@@ -1,0 +1,471 @@
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    .navbar {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 15px 0;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+    }
+
+    .navbar-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 30px;
+        gap: 20px;
+    }
+
+    .navbar-brand {
+        font-size: 26px;
+        font-weight: 800;
+        color: white;
+        text-decoration: none;
+        padding: 0;
+        opacity: 1;
+        transform: translateX(0);
+        transition: all 0.3s;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    
+    .navbar-brand:hover {
+        transform: scale(1.08);
+        text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.3);
+    }
+
+    .navbar-menu {
+        display: flex;
+        gap: 8px;
+        list-style: none;
+        align-items: center;
+        flex: 1;
+        justify-content: center;
+    }
+
+    .navbar-menu li {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .nav-btn {
+        color: white;
+        background: rgba(255, 255, 255, 0.15);
+        border: 2px solid rgba(255, 255, 255, 0.4);
+        padding: 10px 18px;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+        white-space: nowrap;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .nav-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+        border-color: white;
+        transform: translateY(-3px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .nav-btn.active {
+        background: white;
+        color: #667eea;
+        border-color: white;
+        font-weight: 700;
+    }
+    
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: white;
+    }
+    
+    .user-badge {
+        background: rgba(255, 255, 255, 0.25);
+        padding: 10px 18px;
+        border-radius: 25px;
+        font-size: 13px;
+        font-weight: 700;
+        border: 2px solid rgba(255, 255, 255, 0.4);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .btn-logout {
+        padding: 10px 20px;
+        background: white;
+        color: #667eea;
+        border: 3px solid white;
+        border-radius: 10px;
+        text-decoration: none;
+        font-weight: 700;
+        white-space: nowrap;
+        display: inline-block;
+        font-size: 14px;
+        transition: all 0.3s;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .btn-logout:hover {
+        background: #ff6b6b;
+        color: white;
+        border-color: #ff6b6b;
+        transform: translateY(-3px);
+        box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+    }
+    
+    .user-type-admin { background: rgba(255, 215, 0, 0.3); }
+    .user-type-driver { background: rgba(100, 149, 237, 0.3); }
+    .user-type-producer { background: rgba(50, 205, 50, 0.3); }
+    
+    .blockchain-notification {
+        position: relative;
+        width: 45px;
+        height: 45px;
+        background: #ff6b6b;
+        color: white;
+        border: 3px solid white;
+        border-radius: 50%;
+        text-decoration: none;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        animation: bellPulse 2s infinite;
+        box-shadow: 0 0 20px rgba(255, 107, 107, 0.6), 0 4px 15px rgba(0, 0, 0, 0.2);
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    
+    .blockchain-notification:hover {
+        background: #ee5a6f;
+        transform: scale(1.1) rotate(15deg);
+        box-shadow: 0 0 30px rgba(255, 107, 107, 0.9), 0 6px 20px rgba(0, 0, 0, 0.3);
+    }
+    
+    .notification-badge {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        background: white;
+        color: #ff6b6b;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 800;
+        border: 2px solid #ff6b6b;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+    
+    @keyframes bellPulse {
+        0%, 100% {
+            box-shadow: 0 0 20px rgba(255, 107, 107, 0.6), 0 4px 15px rgba(0, 0, 0, 0.2);
+            transform: scale(1);
+        }
+        50% {
+            box-shadow: 0 0 40px rgba(255, 107, 107, 1), 0 6px 20px rgba(0, 0, 0, 0.3);
+            transform: scale(1.05);
+        }
+    }
+    
+    .notification-center {
+        position: relative;
+        width: 45px;
+        height: 45px;
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: 3px solid white;
+        border-radius: 50%;
+        text-decoration: none;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        transition: all 0.3s;
+        cursor: pointer;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+    
+    .notification-center:hover {
+        background: rgba(255, 255, 255, 0.35);
+        transform: scale(1.1) rotate(-15deg);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+    
+    .notification-center .notification-badge {
+        background: #ff6b6b;
+        color: white;
+        border-color: white;
+    }
+    
+    .auth-buttons {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    
+    .btn-login {
+        padding: 12px 24px;
+        background: white;
+        color: #667eea;
+        border: 2px solid white;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 700;
+        white-space: nowrap;
+        display: inline-block;
+        font-size: 15px;
+    }
+    
+    .btn-login:hover {
+        background: #f0f4ff;
+        color: #5568d3;
+    }
+    
+    .btn-register {
+        padding: 12px 24px;
+        background: white;
+        color: #667eea;
+        border: 2px solid white;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 700;
+        white-space: nowrap;
+        display: inline-block;
+        font-size: 15px;
+    }
+    
+    .btn-register-driver {
+        background: #764ba2;
+        color: white;
+        border-color: #764ba2;
+    }
+    
+    .btn-register-driver:hover {
+        background: #8b5ab8;
+        border-color: #8b5ab8;
+    }
+    
+    .btn-register-producer {
+        background: #43cea2;
+        color: white;
+        border-color: #43cea2;
+    }
+    
+    .btn-register-producer:hover {
+        background: #52d4af;
+        border-color: #52d4af;
+    }
+    
+    .dropdown {
+        position: relative;
+        display: inline-block;
+    }
+    
+    .dropdown-toggle {
+        padding: 12px 24px;
+        background: white;
+        color: #667eea;
+        border: 2px solid white;
+        border-radius: 8px;
+        font-weight: 700;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 15px;
+        font-family: inherit;
+    }
+    
+    .dropdown-toggle:hover {
+        background: #f0f4ff;
+        color: #5568d3;
+    }
+    
+    .dropdown-arrow {
+        font-size: 10px;
+    }
+    
+    .dropdown.active .dropdown-arrow {
+        transform: rotate(180deg);
+    }
+    
+    .dropdown-menu {
+        position: absolute;
+        top: calc(100% + 10px);
+        left: 0;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        min-width: 240px;
+        overflow: visible;
+        display: none;
+        z-index: 10000;
+        border: 2px solid #e0e0e0;
+    }
+    
+    .dropdown.active .dropdown-menu {
+        display: block;
+    }
+    
+    .dropdown-menu a {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 16px 20px;
+        color: #333;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 15px;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .dropdown-menu a:last-child {
+        border-bottom: none;
+    }
+    
+    .dropdown-menu a:hover {
+        background: #f0f4ff;
+        color: #667eea;
+    }
+
+    @media (max-width: 768px) {
+        .navbar-container {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .navbar-menu {
+            flex-direction: column;
+            width: 100%;
+            gap: 8px;
+            padding: 10px 0;
+        }
+
+        .nav-btn {
+            width: 100%;
+            text-align: left;
+        }
+        
+        .user-info {
+            padding: 10px 0;
+            width: 100%;
+            flex-wrap: wrap;
+        }
+        
+        .auth-buttons {
+            flex-direction: row;
+            width: auto;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+        
+        .btn-login, .btn-register, .btn-logout {
+            width: auto;
+            text-align: center;
+            justify-content: center;
+        }
+        
+        .dropdown-menu {
+            position: static;
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+            margin-top: 5px;
+            width: 100%;
+        }
+    }
+</style>
+
+<nav class="navbar">
+    <div class="navbar-container">
+        <a href="/" class="navbar-brand">🚚 Delivery Partner</a>
+        <ul class="navbar-menu">
+            <li><a href="/" class="nav-btn">🏠 Home</a></li>
+            <% if (user) { %>
+                <% if (user.user_type === 'ADMIN') { %>
+                    <li><a href="/allProducers" class="nav-btn">🏢 Producers</a></li>
+                    <li><a href="/addProducers" class="nav-btn">➕ Add Producer</a></li>
+                    <li><a href="/allPackages" class="nav-btn">📦 Packages</a></li>
+                    <li><a href="/allContainers" class="nav-btn">🚚 Containers</a></li>
+                    <li><a href="/addContainers" class="nav-btn">➕ Add Container</a></li>
+                    <li><a href="/blockchain" class="nav-btn">⛓️ Blockchain</a></li>
+                <% } else if (user.user_type === 'DRIVER') { %>
+                    <li><a href="/container/<%= user.reference_id %>/routing" class="nav-btn">📊 Dashboard</a></li>
+                    <li><a href="/container/<%= user.reference_id %>" class="nav-btn">🚛 Container</a></li>
+                    <li><a href="/container/<%= user.reference_id %>/plan-route" class="nav-btn">🗺️ Route</a></li>
+                    <li><a href="/allPackages" class="nav-btn">📦 Packages</a></li>
+                    <li><a href="/blockchain" class="nav-btn">⛓️ Blockchain</a></li>
+                <% } else if (user.user_type === 'PRODUCER') { %>
+                    <li><a href="/producer/<%= user.reference_id %>/inventory" class="nav-btn">📦 Inventory</a></li>
+                    <li><a href="/producer/<%= user.reference_id %>/transactions" class="nav-btn">💰 Transactions</a></li>
+                    <li><a href="/allProducers" class="nav-btn">🏢 Producers</a></li>
+                    <li><a href="/blockchain" class="nav-btn">⛓️ Blockchain</a></li>
+                <% } %>
+            <% } else { %>
+                <li><a href="/blockchain" class="nav-btn">⛓️ Blockchain</a></li>
+            <% } %>
+        </ul>
+        <% if (user) { %>
+            <div class="user-info">
+                <% if (typeof blockchainValid !== 'undefined' && !blockchainValid) { %>
+                    <a href="/blockchain" class="blockchain-notification" title="Blockchain Error Detected">
+                        🔔
+                        <span class="notification-badge"><%= blockchainErrorCount || 1 %></span>
+                    </a>
+                <% } else { %>
+                    <a href="#" class="notification-center" onclick="toggleNotifications(event)" title="Notifications">
+                        🔔
+                        <span class="notification-badge" id="notificationCount" style="display: none;">0</span>
+                    </a>
+                <% } %>
+                <span class="user-badge user-type-<%= user.user_type.toLowerCase() %>">
+                    <%= user.name %> (<%= user.user_type %>)
+                </span>
+                <a href="/auth/logout" class="btn-logout">🚪 Logout</a>
+            </div>
+        <% } else { %>
+            <div class="user-info auth-buttons">
+                <a href="/auth/login" class="btn-login">🔑 Login</a>
+                <a href="/auth/register/driver" class="btn-register btn-register-driver">🚚 Register Driver</a>
+                <a href="/auth/register/producer" class="btn-register btn-register-producer">📦 Register Producer</a>
+            </div>
+        <% } %>
+    </div>
+</nav>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+    // Toggle notifications
+    function toggleNotifications(event) {
+        event.preventDefault();
+        alert('Notification Center\n\nFeatures:\n• New package assignments\n• Transaction updates\n• Container status changes\n• Route optimizations\n• System alerts');
+    }
+    
+    // Highlight active page
+    const currentPath = window.location.pathname;
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        if (btn.getAttribute('href') === currentPath) {
+            btn.classList.add('active');
+        }
+    });
+</script>

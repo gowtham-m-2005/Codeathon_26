@@ -1,0 +1,220 @@
+<!-- Loading Animation Component -->
+<style>
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        opacity: 0;
+        visibility: hidden;
+    }
+
+    .loading-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .loading-content {
+        text-align: center;
+        color: white;
+    }
+
+    .loading-spinner {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 30px;
+        position: relative;
+    }
+
+    .spinner-ring {
+        width: 100%;
+        height: 100%;
+        border: 4px solid rgba(255, 255, 255, 0.2);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+        font-size: 24px;
+        font-weight: 600;
+        margin-bottom: 10px;
+    }
+
+    .loading-subtext {
+        font-size: 16px;
+        opacity: 0.8;
+    }
+
+    .loading-dots {
+        display: inline-block;
+    }
+
+    .loading-dots span {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        margin: 0 3px;
+        background: white;
+        border-radius: 50%;
+        animation: bounce 1.4s infinite ease-in-out both;
+    }
+
+    .loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+    .loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+    @keyframes bounce {
+        0%, 80%, 100% { transform: scale(0); }
+        40% { transform: scale(1); }
+    }
+
+    .success-checkmark {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto;
+        display: none;
+    }
+
+    .success-checkmark.show {
+        display: block;
+    }
+
+    .checkmark-circle {
+        stroke-dasharray: 166;
+        stroke-dashoffset: 166;
+        stroke-width: 3;
+        stroke: white;
+        fill: none;
+        animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+    }
+
+    .checkmark-check {
+        transform-origin: 50% 50%;
+        stroke-dasharray: 48;
+        stroke-dashoffset: 48;
+        stroke: white;
+        stroke-width: 3;
+        fill: none;
+        animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.6s forwards;
+    }
+
+    @keyframes stroke {
+        100% { stroke-dashoffset: 0; }
+    }
+</style>
+
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-content">
+        <div class="loading-spinner" id="loadingSpinner">
+            <div class="spinner-ring"></div>
+        </div>
+        
+        <svg class="success-checkmark" id="successCheckmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+            <circle class="checkmark-circle" cx="26" cy="26" r="25"/>
+            <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+        </svg>
+        
+        <div class="loading-text" id="loadingText">Authenticating</div>
+        <div class="loading-subtext">
+            <span id="loadingSubtext">Please wait</span>
+            <span class="loading-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+            </span>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+    window.showLoading = function(message = 'Loading', subtext = 'Please wait') {
+        const overlay = document.getElementById('loadingOverlay');
+        const loadingText = document.getElementById('loadingText');
+        const loadingSubtext = document.getElementById('loadingSubtext');
+        const spinner = document.getElementById('loadingSpinner');
+        const checkmark = document.getElementById('successCheckmark');
+        
+        loadingText.textContent = message;
+        loadingSubtext.textContent = subtext;
+        spinner.style.display = 'block';
+        checkmark.classList.remove('show');
+        
+        overlay.classList.add('active');
+        
+        gsap.fromTo(overlay, 
+            { opacity: 0, scale: 0.9 },
+            { opacity: 1, scale: 1, duration: 0.4, ease: 'power2.out' }
+        );
+        
+        gsap.fromTo('.loading-spinner',
+            { scale: 0, rotation: -180 },
+            { scale: 1, rotation: 0, duration: 0.6, ease: 'back.out(1.7)', delay: 0.2 }
+        );
+        
+        gsap.fromTo('.loading-text',
+            { y: 20, opacity: 0 },
+            { y: 0, opacity: 1, duration: 0.5, delay: 0.4 }
+        );
+        
+        gsap.fromTo('.loading-subtext',
+            { y: 20, opacity: 0 },
+            { y: 0, opacity: 1, duration: 0.5, delay: 0.5 }
+        );
+    };
+    
+    window.showSuccess = function(message = 'Success!', callback, delay = 1500) {
+        const loadingText = document.getElementById('loadingText');
+        const spinner = document.getElementById('loadingSpinner');
+        const checkmark = document.getElementById('successCheckmark');
+        const subtext = document.getElementById('loadingSubtext');
+        
+        gsap.to(spinner, {
+            scale: 0,
+            rotation: 180,
+            duration: 0.4,
+            ease: 'back.in(1.7)',
+            onComplete: () => {
+                spinner.style.display = 'none';
+                checkmark.classList.add('show');
+                gsap.fromTo(checkmark,
+                    { scale: 0, rotation: -180 },
+                    { scale: 1, rotation: 0, duration: 0.6, ease: 'back.out(1.7)' }
+                );
+            }
+        });
+        
+        setTimeout(() => {
+            loadingText.textContent = message;
+            subtext.textContent = 'Redirecting...';
+        }, 400);
+        
+        if (callback) {
+            setTimeout(callback, delay);
+        }
+    };
+    
+    window.hideLoading = function() {
+        const overlay = document.getElementById('loadingOverlay');
+        gsap.to(overlay, {
+            opacity: 0,
+            scale: 0.9,
+            duration: 0.3,
+            ease: 'power2.in',
+            onComplete: () => {
+                overlay.classList.remove('active');
+            }
+        });
+    };
+</script>

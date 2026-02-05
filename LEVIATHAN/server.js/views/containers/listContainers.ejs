@@ -1,0 +1,223 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>All Containers</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    body{font-family: Arial, Helvetica, sans-serif; margin: 0; padding: 0}
+    #map { height: 400px; width: 100%; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px }
+    th, td { padding: 8px; border: 1px solid #ddd; text-align: left }
+    th { background:#f4f4f4 }
+  </style>
+</head>
+<body>
+
+  <%- include('../partials/navbar') %>
+
+  <div class="container-app">
+    <header class="page-header">
+      <div>
+        <h1 class="page-title">Containers</h1>
+        <p class="lead">List view with map plotting each container location and animated interactions.</p>
+      </div>
+    </header>
+
+    <main class="grid">
+      <section class="panel left">
+        <div class="table-controls" style="display:flex; gap:8px; align-items:center; margin-bottom:12px">
+          <input id="tableSearch" placeholder="Search code, driver, phone..." style="flex:1; padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.04); background:transparent; color:inherit">
+          <div class="muted">Sort:</div>
+          <button class="btn small" data-key="container_code">Code</button>
+          <button class="btn small" data-key="driver_name">Driver</button>
+          <button class="btn small" data-key="available_sections">Avail</button>
+        </div>
+        <table class="data-table" id="containersTable">
+          <thead>
+            <tr>
+              <th style="width:48px">#</th>
+              <th style="width:140px">Code</th>
+              <th style="width:220px">Driver</th>
+              <th style="width:130px">Phone</th>
+              <th style="width:120px">Avail / Total</th>
+              <th style="width:120px">Cost/Section</th>
+              <th>Location</th>
+              <th style="width:140px">Last Updated</th>
+              <th style="width:140px">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% containers.forEach(function(c, idx){ %>
+              <tr class="table-row" data-id="<%= c.container_id %>">
+                <td data-label="#"><%= idx + 1 %></td>
+                <td data-label="Code"><div class="code-pill"><%= c.container_code || '—' %></div></td>
+                <td data-label="Driver">
+                  <div class="driver-cell">
+                    <div class="driver-avatar"><%= (c.driver_name || 'D')[0].toUpperCase() %></div>
+                    <div class="driver-name"><%= c.driver_name || '—' %></div>
+                  </div>
+                </td>
+                <td data-label="Phone"><a href="tel:<%= c.driver_phone %>"><%= c.driver_phone || '—' %></a></td>
+                <td data-label="Avail / Total"><div class="avail-badge"><%= c.available_sections %> / <%= c.total_sections %></div></td>
+                <td data-label="Cost"><span class="muted">₹<%= c.cost_per_section || '—' %></span></td>
+                <td data-label="Location"><span class="mono"><%= c.current_latitude %>, <%= c.current_longitude %></span></td>
+                <td data-label="Last Updated"><%= c.last_updated || '—' %></td>
+                <td data-label="Actions">
+                  <a class="btn small" href="/container/<%= c.container_id %>">View</a> 
+                  <a class="btn small" href="/container/<%= c.container_id %>/routing" style="background:linear-gradient(90deg,#10b981,#059669)">Route</a>
+                  <button class="btn small center-btn" data-id="<%= c.container_id %>">Center</button>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </section>
+      <br>
+      <section class="panel right">
+        <div id="map" style="height:72vh; border-radius:10px;"></div>
+      </section>
+    </main>
+  </div>
+
+  <%- include('../partials/footer') %>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+  <style>
+    body{ font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Arial; background:linear-gradient(180deg,#041026,#071028); color:#e8f3ff; margin:0 }
+    .container-app{ max-width:1200px; margin:28px auto; padding:18px }
+    .page-header{ display:flex; align-items:center; justify-content:space-between }
+    .page-title{ font-size:26px; margin:0 }
+    .grid{ display:grid; grid-template-columns: 1fr 640px; gap:18px; margin-top:18px }
+    .panel{ background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); padding:14px; border-radius:12px; border:1px solid rgba(255,255,255,0.04) }
+    .data-table{ width:100%; border-collapse:collapse; table-layout:fixed; box-sizing:border-box }
+    .data-table th, .data-table td{ padding:12px 10px; border-bottom:1px solid rgba(255,255,255,0.03); color:#dbeafe; vertical-align:middle; box-sizing:border-box; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+    .data-table thead th{ color:#93c5fd; font-weight:700; position:sticky; top:0; background:linear-gradient(180deg, rgba(10,14,27,0.92), rgba(10,14,27,0.95)); backdrop-filter: blur(4px); z-index:2 }
+    .table-row{ cursor:pointer; transition: background-color .18s ease, transform .12s ease }
+    .table-row:hover{ background: linear-gradient(90deg, rgba(59,130,246,0.06), rgba(139,92,246,0.03)); transform:translateX(2px) }
+
+    .code-pill{ display:inline-block; padding:6px 10px; border-radius:8px; background:rgba(99,102,241,0.12); color:#c7d2fe; font-weight:700 }
+    .driver-cell{ display:flex; align-items:center; gap:10px }
+    .driver-avatar{ width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,#06b6d4,#3b82f6); display:flex;align-items:center;justify-content:center;color:white;font-weight:700 }
+    .driver-name{ color:#e6f0ff; font-weight:700 }
+    .avail-badge{ display:inline-block; padding:6px 8px; border-radius:8px; background:linear-gradient(90deg,#10b981,#34d399); color:#022c1f; font-weight:700 }
+    .muted{ color:#9fb2d9 }
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, 'Roboto Mono', monospace; color:#cfe3ff }
+    .data-table td:first-child, .data-table thead th:first-child{ text-align:center }
+    .data-table td:nth-child(2), .data-table thead th:nth-child(2){ text-align:left }
+    .code-pill{ max-width:120px; overflow:hidden; text-overflow:ellipsis }
+    .driver-name{ max-width:180px; overflow:hidden; text-overflow:ellipsis }
+    .data-table td a{ color:inherit; text-decoration:none }
+    @media (max-width:980px){ 
+      .grid{ grid-template-columns: 1fr }
+      #map{ height:380px }
+      .data-table thead { display:none }
+      .data-table, .data-table tbody, .data-table tr, .data-table td { display:block; width:100% }
+      .data-table tr { margin-bottom:12px; border-bottom:none }
+      .data-table td { padding:8px 10px; border-bottom:1px solid rgba(255,255,255,0.03) }
+      .data-table td:before { content: attr(data-label) ": "; font-weight:700; color:#93c5fd; display:inline-block; width:120px }
+    }
+  </style>
+
+  <script>
+    const containers = <%- JSON.stringify(containers || []) %>;
+
+    // map
+    const map = L.map('map');
+    const markersMap = {};
+    const bounds = [];
+
+    const first = containers.find(c => c.current_latitude && c.current_longitude);
+    if (first) map.setView([first.current_latitude, first.current_longitude], 6);
+    else map.setView([20.5937,78.9629],5);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+
+    containers.forEach((c, i) => {
+      const lat = parseFloat(c.current_latitude);
+      const lng = parseFloat(c.current_longitude);
+      if (!isNaN(lat) && !isNaN(lng)){
+        const m = L.marker([lat,lng]).addTo(map);
+        const popup = `<strong>${c.container_code || 'Container'}</strong><br/>Driver: ${c.driver_name || '—'}<br/>Avail: ${c.available_sections}/${c.total_sections}`;
+        m.bindPopup(popup);
+        markersMap[c.container_id] = m;
+        bounds.push([lat,lng]);
+      }
+    });
+    if (bounds.length) map.fitBounds(bounds, { padding:[40,40] });
+
+    // render and interactivity: table rows mapped by container_id
+    const tableBody = document.querySelector('#containersTable tbody');
+
+    function renderTable(rows){
+        const html = rows.map((c, i) => `
+        <tr class="table-row" data-id="${c.container_id}">
+          <td data-label="#">${i+1}</td>
+          <td data-label="Code"><div class="code-pill">${c.container_code||'—'}</div></td>
+          <td data-label="Driver"><div class="driver-cell"><div class="driver-avatar">${(c.driver_name||'D')[0].toUpperCase()}</div><div class="driver-name">${c.driver_name||'—'}</div></div></td>
+          <td data-label="Phone"><a href="tel:${c.driver_phone||''}">${c.driver_phone||'—'}</a></td>
+          <td data-label="Avail / Total"><div class="avail-badge">${c.available_sections} / ${c.total_sections}</div></td>
+          <td data-label="Cost"><span class="muted">₹${c.cost_per_section||'—'}</span></td>
+          <td data-label="Location"><span class="mono">${c.current_latitude||'—'}, ${c.current_longitude||'—'}</span></td>
+          <td data-label="Last Updated">${c.last_updated||'—'}</td>
+          <td data-label="Actions"><a class="btn small" href="/container/${c.container_id}">View</a> <button class="btn small center-btn" data-id="${c.container_id}">Center</button></td>
+        </tr>
+      `).join('');
+      tableBody.innerHTML = html;
+    }
+
+    // initial render
+    let tableData = containers.slice();
+    renderTable(tableData);
+
+    // click handler via delegation
+    tableBody.addEventListener('click', (e)=>{
+      const tr = e.target.closest('tr');
+      if (!tr) return;
+      const id = tr.dataset.id;
+      const m = markersMap[id];
+      if (m){ m.openPopup(); map.panTo(m.getLatLng(), { animate:true, duration:0.6 }); }
+      gsap.fromTo(tr, { backgroundColor: 'rgba(255,255,255,0.00)' }, { backgroundColor: 'rgba(59,130,246,0.06)', duration:0.25, yoyo:true, repeat:1 });
+    });
+
+    // GSAP entrance animations
+    gsap.from('.page-title', { opacity:0, y:18, duration:0.7, ease:'power3.out' });
+    gsap.from('.panel', { opacity:0, y:24, duration:0.9, stagger:0.07 });
+    // stagger table row entrance after initial render
+    setTimeout(()=>{ gsap.utils.toArray('.table-row').forEach((r,i)=> gsap.from(r, { opacity:0, x:-12, duration:0.6, delay:i*0.02 })); }, 140);
+
+    // Sorting & searching
+    const searchInput = document.getElementById('tableSearch');
+    const sortButtons = document.querySelectorAll('.btn.small');
+    let currentSort = { key: null, dir: 1 };
+
+    function applyFilterAndSort(){
+      const q = (searchInput.value || '').toLowerCase().trim();
+      let rows = containers.slice();
+      if (q) rows = rows.filter(c => (c.container_code||'').toLowerCase().includes(q) || (c.driver_name||'').toLowerCase().includes(q) || (c.driver_phone||'').toLowerCase().includes(q));
+      if (currentSort.key){
+        rows.sort((a,b)=>{
+          const A = (a[currentSort.key] || '').toString().toLowerCase();
+          const B = (b[currentSort.key] || '').toString().toLowerCase();
+          if (!isNaN(parseFloat(A)) && !isNaN(parseFloat(B))) return (parseFloat(A)-parseFloat(B)) * currentSort.dir;
+          return A < B ? -1*currentSort.dir : (A > B ? 1*currentSort.dir : 0);
+        });
+      }
+      renderTable(rows);
+    }
+
+    searchInput.addEventListener('input', ()=> applyFilterAndSort());
+    sortButtons.forEach(btn => {
+      btn.addEventListener('click', ()=>{
+        const key = btn.dataset.key;
+        if (currentSort.key === key) currentSort.dir *= -1; else currentSort = { key, dir: 1 };
+        applyFilterAndSort();
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Add Container</title>
+
+    <style>
+        :root{--bg:#071229;--card:#0b1622;--muted:#9aa4b2;--accent:#06b6d4}
+        html,body{height:100%;}
+        body{font-family:Inter,Segoe UI,Roboto,Arial; background:linear-gradient(180deg,#041021 0%,#071229 100%); color:#e6eef6; margin:0; padding:20px}
+        .container{max-width:980px;margin:0 auto}
+        h2{margin:0 0 14px 0}
+        .card{background:var(--card); padding:16px; border-radius:10px; box-shadow:0 8px 30px rgba(2,6,23,0.6); border:1px solid rgba(255,255,255,0.03)}
+        form{display:grid; grid-template-columns:1fr 320px; gap:14px; align-items:start}
+        .form-left{display:flex; flex-direction:column; gap:8px}
+        label{font-size:13px; color:var(--muted)}
+        input[type=text], input[type=tel], input[type=number]{padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.04); background:transparent; color:inherit}
+        .map-wrap{width:100%}
+        #map{height:460px; border-radius:8px; overflow:hidden; border:1px solid rgba(255,255,255,0.03)}
+        .side-card{padding:12px; display:flex; flex-direction:column; gap:10px}
+        .hint{font-size:13px; color:#9fbfd0}
+        button[type=submit]{padding:10px 14px; background:linear-gradient(90deg,var(--accent),#7c3aed); color:#042027; border:none; border-radius:8px; cursor:pointer; font-weight:700}
+        @media (max-width:900px){form{grid-template-columns:1fr;}.map-wrap{order:2}}
+    </style>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.5/gsap.min.js"></script>
+</head>
+<body>
+
+<%- include('../partials/navbar') %>
+
+<div class="container">
+    <h2>Add Container</h2>
+    <div class="card">
+        <form action="/addContainers" method="POST" onsubmit="return validateForm()">
+            <div class="form-left">
+                <div class="form-row">
+                    <label>Container Code (Vehicle Identifier)</label>
+                    <input type="text" name="container_code" required placeholder="e.g. TRK-001">
+                </div>
+
+                <div class="form-row">
+                    <label>Driver Name</label>
+                    <input type="text" name="driver_name" placeholder="Optional">
+                </div>
+
+                <div class="form-row">
+                    <label>Driver Phone</label>
+                    <input type="tel" name="driver_phone" pattern="[0-9]{10}" title="Enter a valid 10-digit phone number" required placeholder="e.g. 9876543210">
+                </div>
+
+                <div class="form-row" style="display:flex;gap:8px">
+                    <div style="flex:1">
+                        <label>Section Storage Space (per section)</label>
+                        <input type="number" name="section_storage_space" min="1" value="1" required>
+                    </div>
+                    <div style="width:120px">
+                        <label>Total Sections</label>
+                        <input type="number" name="total_sections" min="1" value="4" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <label>Available Sections</label>
+                    <input type="number" name="available_sections" min="0" value="4" required>
+                </div>
+
+                <p class="hint" style="background: rgba(6, 182, 212, 0.1); padding: 8px; border-radius: 6px; border-left: 3px solid var(--accent);">
+                    <strong>💡 Smart Pricing:</strong> Delivery costs are automatically calculated using our ML algorithm based on distance, urgency, and demand.
+                </p>
+
+                <p class="hint"><strong>Click on the map</strong> to set container's current location</p>
+
+                <input type="hidden" name="current_latitude" id="curLat" required>
+                <input type="hidden" name="current_longitude" id="curLng" required>
+
+                <div>
+                    <button type="submit">Create Container</button>
+                </div>
+            </div>
+
+            <div class="map-wrap">
+                <div id="map"></div>
+            </div>
+        </form>
+    </div>
+    <%- include('../partials/footer') %>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+        // simple DOM helpers
+        const latInput = document.getElementById('curLat');
+        const lngInput = document.getElementById('curLng');
+
+        // initialize map
+        const map = L.map('map', {zoomControl:true}).setView([11.1271, 78.6569], 7);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19}).addTo(map);
+
+        let marker = null;
+
+        function placeMarker(latlng){
+            const lat = latlng.lat.toFixed(7);
+            const lng = latlng.lng.toFixed(7);
+            latInput.value = lat; lngInput.value = lng;
+            if (marker) marker.setLatLng(latlng);
+            else marker = L.marker(latlng).addTo(map);
+            marker.bindPopup(`Current Location<br>Lat: ${lat}<br>Lng: ${lng}`).openPopup();
+            // subtle bounce via GSAP
+            gsap.fromTo('#map', {scale:0.997, boxShadow:'0 0 0 rgba(0,0,0,0)'}, {scale:1, duration:0.6, ease:'elastic.out(1,0.6)'});
+        }
+
+        map.on('click', function (e) { placeMarker(e.latlng); });
+
+        function validateForm() {
+                if (!latInput.value || !lngInput.value) {
+                        alert('Please click on the map to select the container location.');
+                        return false;
+                }
+                return true;
+        }
+
+        // GSAP entrance animations for form and map
+        gsap.from('.card', {autoAlpha:0, y:12, duration:0.6, ease:'power3.out'});
+        gsap.from('.form-left .form-row', {autoAlpha:0, y:8, stagger:0.06, duration:0.45, delay:0.08});
+        gsap.from('#map', {autoAlpha:0, x:18, duration:0.6, delay:0.12, ease:'power3.out'});
+
+        // ensure map redraws after layout
+        map.whenReady(()=> setTimeout(()=>{ try{ map.invalidateSize(); }catch(e){} }, 450));
+</script>
+</body>
+</html>

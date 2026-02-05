@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Transaction - <%= task.transaction_type %></title>
+    <style>
+        :root{--bg:#071229;--card:#0b1622;--muted:#9aa4b2;--accent:#06b6d4;--success:#10b981}
+        html,body{height:100%;}
+        body{font-family:Inter,Segoe UI,Roboto,Arial; background:linear-gradient(180deg,#041021 0%,#071229 100%); color:#e6eef6; margin:0; padding:20px}
+        .container{max-width:680px;margin:0 auto}
+        h1{margin:0 0 8px 0; font-size:22px}
+        .subtitle{color:var(--muted); margin-bottom:20px; font-size:14px}
+        .card{background:var(--card); padding:20px; border-radius:10px; box-shadow:0 8px 30px rgba(2,6,23,0.6); border:1px solid rgba(255,255,255,0.03)}
+        .task-header{background:rgba(6,182,212,0.1); padding:14px; border-radius:8px; margin-bottom:18px; border-left:4px solid var(--accent)}
+        .task-header h2{margin:0 0 8px 0; font-size:18px}
+        .task-header p{margin:4px 0; font-size:13px; color:var(--muted)}
+        .form-group{margin-bottom:16px}
+        label{display:block; margin-bottom:6px; font-size:13px; color:var(--muted); font-weight:600}
+        input, select{width:100%; padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.06); background:rgba(255,255,255,0.02); color:inherit; font-size:14px}
+        .btn{display:inline-block; padding:10px 16px; background:linear-gradient(90deg,var(--success),#10b981); color:#042027; border-radius:8px; text-decoration:none; font-weight:700; border:none; cursor:pointer; font-size:14px; width:100%}
+        .btn.ghost{background:transparent; border:1px solid rgba(255,255,255,0.08); color:var(--muted)}
+        .actions{display:flex; gap:8px; margin-top:16px}
+        .info-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px}
+        .info-item{background:rgba(255,255,255,0.02); padding:10px; border-radius:8px}
+        .info-item .label{font-size:11px; color:var(--muted); margin-bottom:4px}
+        .info-item .value{font-size:16px; font-weight:600; color:var(--accent)}
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.5/gsap.min.js"></script>
+</head>
+<body>
+    <%- include('../partials/navbar') %>
+
+    <div class="container">
+        <h1><%= task.transaction_type === 'LOAD' ? 'Pickup' : 'Delivery' %> Transaction</h1>
+        <p class="subtitle">Complete the transaction to proceed to next task</p>
+
+        <div class="card">
+            <div class="task-header">
+                <h2><%= task.task_type %>: <%= task.package_name || 'Package #' + task.package_id %></h2>
+                <p><strong>Node Type:</strong> <%= task.node_type %></p>
+                <p><strong>Location:</strong> <%= task.latitude %>, <%= task.longitude %></p>
+                <p><strong>Status:</strong> <%= task.transaction_status || 'REQUESTED' %></p>
+            </div>
+
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="label">Required Sections</div>
+                    <div class="value"><%= task.required_sections || 1 %></div>
+                </div>
+                <div class="info-item">
+                    <div class="label">Available Sections</div>
+                    <div class="value"><%= task.available_sections || 0 %></div>
+                </div>
+            </div>
+
+            <form method="POST" action="/transaction/<%= task.transaction_id %>/complete">
+                <div class="form-group">
+                    <label>Number of Sections Used</label>
+                    <input 
+                        type="number" 
+                        name="sections_used" 
+                        min="1" 
+                        max="<%= task.transaction_type === 'LOAD' ? task.available_sections : (task.required_sections || 1) %>" 
+                        value="<%= task.required_sections || 1 %>" 
+                        required
+                    >
+                </div>
+
+                <% if (task.transaction_type === 'LOAD') { %>
+                    <p style="font-size:12px; color:var(--muted); margin-bottom:12px">
+                        ✓ Inventory will be deducted<br>
+                        ✓ Container capacity will be updated<br>
+                        ✓ Package status will change to LOADED
+                    </p>
+                <% } else { %>
+                    <p style="font-size:12px; color:var(--muted); margin-bottom:12px">
+                        ✓ Container capacity will be freed<br>
+                        ✓ Package status will change to DELIVERED
+                    </p>
+                <% } %>
+
+                <div class="actions">
+                    <button type="submit" class="btn" style="flex:1">
+                        <%= task.transaction_type === 'LOAD' ? 'Complete Pickup' : 'Complete Delivery' %>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <%- include('../partials/footer') %>
+
+    <script>
+        gsap.from('.card', {autoAlpha:0, y:16, duration:0.6, ease:'power3.out'});
+        gsap.from('.task-header', {autoAlpha:0, x:-12, duration:0.5, delay:0.1});
+        gsap.from('.info-item', {autoAlpha:0, y:8, stagger:0.05, duration:0.4, delay:0.2});
+    </script>
+</body>
+</html>

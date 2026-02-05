@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Packages</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <style>
+        :root { --bg:#071028; --card:#0d1630; --muted:#9fb2d9; }
+        body { margin:0; font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; background: linear-gradient(180deg,#041026 0%, #071028 100%); color:#e6f0ff; }
+        .wrap { max-width:1300px; margin:36px auto 120px; padding:20px; }
+        .head { display:flex; align-items:center; gap:16px; margin-bottom:18px; }
+        .title { font-size:26px; font-weight:800; }
+        .subtitle { color:var(--muted); font-size:13px; }
+
+        .layout { display:grid; grid-template-columns: 420px 1fr; gap:24px; align-items:start; }
+        .panel { background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.04); padding:18px; border-radius:12px; }
+
+        .filter-bar { display:flex; gap:8px; margin-bottom:12px; }
+        .search { flex:1; padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.04); background:transparent; color:inherit; }
+        .btn { padding:10px 12px; border-radius:10px; background:linear-gradient(90deg,#06b6d4,#3b82f6); color:white; border:none; cursor:pointer; }
+
+        .cards { display:flex; flex-direction:column; gap:12px; max-height:72vh; overflow:auto; padding-right:8px; }
+        .card { display:flex; gap:12px; align-items:center; padding:12px; border-radius:10px; background:rgba(255,255,255,0.01); border:1px solid rgba(255,255,255,0.02); cursor:pointer; }
+        .thumb { width:84px; height:64px; border-radius:8px; overflow:hidden; flex-shrink:0; background:#0b1220; display:flex; align-items:center; justify-content:center; }
+        .thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+        .meta { flex:1; }
+        .meta h4 { margin:0 0 6px 0; font-size:15px; }
+        .meta p { margin:0; color:var(--muted); font-size:13px; }
+
+        #map { height:72vh; border-radius:10px; border:1px solid rgba(255,255,255,0.04); }
+
+        .status { font-weight:700; font-size:12px; padding:6px 8px; border-radius:8px; }
+        .available { background:linear-gradient(90deg,#10b981,#34d399); color:#022c1f; }
+        .out { background:linear-gradient(90deg,#ef4444,#f97316); color:#2b0300; }
+
+        @media (max-width: 980px) { .layout { grid-template-columns: 1fr; } #map { height:360px; } }
+        @media (prefers-reduced-motion: reduce) { * { transition:none!important; animation:none!important; } }
+    </style>
+</head>
+<body>
+    <%- include('../partials/navbar') %>
+
+    <div class="wrap">
+        
+        <div class="head">
+            <div>
+                <div class="title">All Packages</div>
+                <div class="subtitle">Browse packages, preview locations on the map, and jump to any package.</div>
+            </div>
+            <div style="margin-left:auto; display:flex; gap:10px; align-items:center;">
+                <div class="subtitle">Total: <strong><%= (packages && packages.length) || 0 %></strong></div>
+            </div>
+        </div>
+
+        <div class="layout">
+            <div class="panel">
+                <div class="filter-bar">
+                    <input class="search" id="searchInput" placeholder="Search by producer, item or status">
+                    <button class="btn" id="refreshBtn">Refresh</button>
+                </div>
+
+                <% if (!packages || packages.length === 0) { %>
+                    <div class="subtitle">No packages found.</div>
+                <% } else { %>
+                    <div class="cards" id="cards">
+                        <% packages.forEach(function(pkg, idx){ %>
+                            <div class="card" data-idx="<%= idx %>" aria-label="Package <%= pkg.item_name %>">
+                                <div class="thumb">
+                                    <img src="<%= pkg.image_url || 'https://images.unsplash.com/photo-1606813902814-8c0cf4b3f3b6?q=80&w=400&auto=format&fit=crop&ixlib=rb-4.0.3&s=placeholder' %>" alt="pkg">
+                                </div>
+                                <div class="meta">
+                                    <h4><%= pkg.item_name %> — <span style="color:var(--muted); font-weight:600;">x<%= pkg.available_quantity %></span></h4>
+                                    <p><%= pkg.producer_name %> • <span class="subtitle">Last: <%= pkg.last_updated %></span></p>
+                                </div>
+                                <div>
+                                    <% if (pkg.available_quantity && pkg.available_quantity > 0) { %>
+                                        <div class="status available">Available</div>
+                                    <% } else { %>
+                                        <div class="status out">Out</div>
+                                    <% } %>
+                                </div>
+                            </div>
+                        <% }) %>
+                    </div>
+                <% } %>
+            </div>
+
+            <div class="panel">
+                <div id="map"></div>
+            </div>
+        </div>
+    </div>
+
+    <%- include('../partials/footer') %>
+
+    <!-- Leaflet + GSAP -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+    <script>
+        const packagesData = <%- JSON.stringify(packages || []) %>;
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        // init map
+        const map = L.map('map', { zoomControl: true }).setView([11.1271, 78.6569], 7);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+
+        const markers = [];
+        const bounds = [];
+        let currentRouteControl = null;
+        let fallbackPolyline = null;
+
+        function chooseStart(pkg) {
+            const lat = pkg.producer_latitude || pkg.origin_latitude;
+            const lng = pkg.producer_longitude || pkg.origin_longitude;
+            if (lat && lng) return [parseFloat(lat), parseFloat(lng)];
+            return null;
+        }
+
+        function chooseDest(pkg) {
+            const lat = pkg.destination_latitude;
+            const lng = pkg.destination_longitude;
+            if (lat && lng) return [parseFloat(lat), parseFloat(lng)];
+            return null;
+        }
+
+        function chooseLocation(pkg) {
+            // prefer producer coords, then origin, then destination
+            const lat = pkg.producer_latitude || pkg.origin_latitude || pkg.destination_latitude;
+            const lng = pkg.producer_longitude || pkg.origin_longitude || pkg.destination_longitude;
+            if (lat && lng) return [parseFloat(lat), parseFloat(lng)];
+            return null;
+        }
+
+        packagesData.forEach((pkg, i) => {
+            const start = chooseStart(pkg) || chooseLocation(pkg);
+            const dest = chooseDest(pkg);
+            if (!start && !dest) return;
+
+            let startMarker = null;
+            if (start) {
+                startMarker = L.marker(start).addTo(map);
+                startMarker.bindPopup(`<strong>${pkg.item_name}</strong><br>Start: ${pkg.producer_name || 'origin'}<br>Qty: ${pkg.available_quantity}`);
+                bounds.push(start);
+            }
+
+            let destMarker = null;
+            if (dest) {
+                destMarker = L.circleMarker(dest, { radius:8, color:'#f97316', fillColor:'#fb923c', fillOpacity:0.9 }).addTo(map);
+                destMarker.bindPopup(`<strong>${pkg.item_name}</strong><br>Destination<br>${pkg.destination_latitude}, ${pkg.destination_longitude}`);
+                bounds.push(dest);
+            }
+
+            markers.push({ idx: i, start: startMarker, dest: destMarker });
+        });
+
+        if (bounds.length) map.fitBounds(bounds, { padding: [40,40] });
+
+        // connect cards -> markers
+        document.querySelectorAll('.card').forEach(card => {
+            card.addEventListener('click', () => {
+                const idx = parseInt(card.dataset.idx, 10);
+                const found = markers.find(x => x.idx === idx);
+                if (found) {
+                    // open appropriate popup and focus map
+                    if (found.start) {
+                        found.start.openPopup && found.start.openPopup();
+                        map.panTo(found.start.getLatLng(), { animate: true, duration: 0.6 });
+                    } else if (found.dest) {
+                        found.dest.openPopup && found.dest.openPopup();
+                        if (found.dest.getLatLng) map.panTo(found.dest.getLatLng(), { animate: true, duration: 0.6 });
+                    }
+                }
+
+                // show road route to destination (if available)
+                const pkg = packagesData[idx];
+                const start = chooseStart(pkg) || chooseLocation(pkg);
+                const destLat = pkg.destination_latitude;
+                const destLng = pkg.destination_longitude;
+
+                // clear previous route/polyline
+                if (currentRouteControl) { try { map.removeControl(currentRouteControl); } catch(e){} currentRouteControl = null; }
+                if (fallbackPolyline) { try { map.removeLayer(fallbackPolyline); } catch(e){} fallbackPolyline = null; }
+
+                if (start && destLat && destLng) {
+                    const dest = [parseFloat(destLat), parseFloat(destLng)];
+                    
+                    console.log('🗺️ Package Route waypoints:', {
+                        start: start,
+                        dest: dest
+                    });
+                    
+                    // attempt to draw route using OSRM via leaflet-routing-machine
+                    if (L.Routing && L.Routing.OSRMv1) {
+                        try {
+                            currentRouteControl = L.Routing.control({
+                                waypoints: [ L.latLng(start[0], start[1]), L.latLng(dest[0], dest[1]) ],
+                                routeWhileDragging: false,
+                                addWaypoints: false,
+                                draggableWaypoints: false,
+                                fitSelectedRoutes: true,
+                                showAlternatives: false,
+                                router: new L.Routing.OSRMv1({
+                                    serviceUrl: 'https://router.project-osrm.org/route/v1',
+                                    profile: 'car',
+                                    timeout: 30000,
+                                    useHints: false
+                                }),
+                                lineOptions: { 
+                                    styles: [{ color: '#3b82f6', weight: 5, opacity: 0.8 }],
+                                    extendToWaypoints: true,
+                                    missingRouteTolerance: 100
+                                },
+                                createMarker: function() { return null; },
+                                show: false,
+                                collapsible: false,
+                                plan: L.Routing.plan([ L.latLng(start[0], start[1]), L.latLng(dest[0], dest[1]) ], {
+                                    createMarker: function() { return null; },
+                                    addWaypoints: false,
+                                    draggableWaypoints: false
+                                })
+                            }).addTo(map);
+                            
+                            // Set timeout fallback
+                            const routeTimeout = setTimeout(() => {
+                                console.warn('⚠️ OSRM routing timeout - using fallback');
+                                if (currentRouteControl) {
+                                    try { map.removeControl(currentRouteControl); } catch(e){}
+                                    currentRouteControl = null;
+                                }
+                                fallbackPolyline = L.polyline([ start, dest ], { 
+                                    color: '#3b82f6', 
+                                    weight: 4, 
+                                    dashArray: '6,6',
+                                    opacity: 0.8 
+                                }).addTo(map);
+                                map.fitBounds([start, dest], { padding:[40,40] });
+                            }, 15000);
+                            
+                            // Clear timeout if routing succeeds
+                            currentRouteControl.on('routesfound', function() {
+                                clearTimeout(routeTimeout);
+                                console.log('✅ OSRM route found successfully');
+                            });
+                            
+                            currentRouteControl.on('routingerror', function(e) {
+                                clearTimeout(routeTimeout);
+                                console.error('⚠️ OSRM routing error:', e);
+                                // Use fallback
+                                if (currentRouteControl) {
+                                    try { map.removeControl(currentRouteControl); } catch(e){}
+                                    currentRouteControl = null;
+                                }
+                                fallbackPolyline = L.polyline([ start, dest ], { 
+                                    color: '#3b82f6', 
+                                    weight: 4, 
+                                    dashArray: '6,6',
+                                    opacity: 0.8 
+                                }).addTo(map);
+                                map.fitBounds([start, dest], { padding:[40,40] });
+                            });
+                        } catch (err) {
+                            console.error('⚠️ OSRM initialization error:', err);
+                            // fallback to straight polyline
+                            fallbackPolyline = L.polyline([ start, dest ], { 
+                                color: '#3b82f6', 
+                                weight: 4, 
+                                dashArray: '6,6',
+                                opacity: 0.8 
+                            }).addTo(map);
+                            map.fitBounds([start, dest], { padding:[40,40] });
+                        }
+                    } else {
+                        // fallback if routing lib not loaded
+                        console.warn('⚠️ Leaflet Routing Machine not available');
+                        fallbackPolyline = L.polyline([ start, dest ], { 
+                            color: '#3b82f6', 
+                            weight: 4, 
+                            dashArray: '6,6',
+                            opacity: 0.8 
+                        }).addTo(map);
+                        map.fitBounds([start, dest], { padding:[40,40] });
+                    }
+                }
+
+                // image pulse
+                const img = card.querySelector('img');
+                if (img && !prefersReducedMotion) gsap.fromTo(img, { scale:1 }, { scale:1.06, duration:0.35, yoyo:true, repeat:1, ease:'sine.inOut' });
+                // card highlight
+                if (!prefersReducedMotion) gsap.fromTo(card, { boxShadow:'0 0 0 rgba(0,0,0,0)' }, { boxShadow:'0 12px 30px rgba(59,130,246,0.12)', duration:0.6, clearProps:'boxShadow' });
+            });
+        });
+
+        // search
+        const searchInput = document.getElementById('searchInput');
+        searchInput && searchInput.addEventListener('input', function(){
+            const q = this.value.trim().toLowerCase();
+            document.querySelectorAll('.card').forEach(card => {
+                const text = card.innerText.toLowerCase();
+                card.style.display = text.includes(q) ? 'flex' : 'none';
+            });
+        });
+
+        // refresh button: small pulse + recenter
+        document.getElementById('refreshBtn').addEventListener('click', function(){
+            if (!prefersReducedMotion) gsap.fromTo(this, { scale:0.96 }, { scale:1, duration:0.4, ease:'elastic.out(1,0.6)' });
+            if (bounds.length) map.fitBounds(bounds, { padding:[40,40] });
+        });
+
+        // Entrance animations
+        if (!prefersReducedMotion) {
+            gsap.from('.title', { opacity:0, y:20, duration:0.8, ease:'power3.out' });
+            gsap.from('.panel', { opacity:0, y:24, duration:0.9, stagger:0.08, ease:'power3.out' });
+            gsap.utils.toArray('.card img').forEach((img, i) => gsap.from(img, { opacity:0, y:8, duration:0.6, delay: i*0.03 }));
+        }
+
+        // decorative floats removed
+    </script>
+</body>
+</html>
